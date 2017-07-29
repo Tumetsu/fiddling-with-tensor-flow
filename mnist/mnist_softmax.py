@@ -25,12 +25,23 @@ y_ = tf.placeholder(tf.float32, [None, 10])
 # First, tf.log computes the logarithm of each element of y. Next, we multiply each element of y_ with the
 # corresponding element of tf.log(y). Then tf.reduce_sum adds the elements in the second dimension of y, due to the
 # reduction_indices=[1] parameter. Finally, tf.reduce_mean computes the mean over all the examples in the batch.
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
+
+# The raw formulation of cross-entropy,
+#
+#   tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(tf.nn.softmax(y)),
+#                                 reduction_indices=[1]))
+#
+# can be numerically unstable.
+#
+# So here we use tf.nn.softmax_cross_entropy_with_logits on the raw
+# outputs of 'y', and then average across the batch.
+cross_entropy = tf.reduce_mean(
+    tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
 
 # In this case, we ask TensorFlow to minimize cross_entropy using the gradient descent algorithm with a learning
 # rate of 0.5. Gradient descent is a simple procedure, where TensorFlow simply shifts each variable a little bit
 # in the direction that reduces the cost
-train_step = tf.train.GradientDescentOptimizer(0.05).minimize(cross_entropy)
+train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
 
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
